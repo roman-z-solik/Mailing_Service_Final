@@ -1,0 +1,111 @@
+{% extends 'base.html' %}
+<!--{% load cache %}-->
+
+{% block title %}Главная - Система рассылок{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-12">
+        <div class="jumbotron bg-light p-5 rounded">
+            {% if not user.is_authenticated %}
+                {% cache 3600 home_header_anon %}
+                <h1 class="display-4">Добро пожаловать в систему рассылок!</h1>
+                <p class="lead">Управляйте вашими email-рассылками эффективно и просто.</p>
+                {% endcache %}
+            {% else %}
+                <h1 class="display-4">Добро пожаловать в систему рассылок!</h1>
+                <p class="lead">Управляйте вашими email-рассылками эффективно и просто.</p>
+            {% endif %}
+
+            {% if user.is_authenticated %}
+                <hr class="my-4">
+
+                {% cache 300 home_stats user.id user.groups.all.0.name %}
+                {% if user.groups.all.0.name == "Managers" or user.is_superuser %}
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="card text-white bg-primary mb-3">
+                            <div class="card-body">
+                                <h5 class="card-title">{{ total_mailings }}</h5>
+                                <p class="card-text">Всего рассылок</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card text-white bg-success mb-3">
+                            <div class="card-body">
+                                <h5 class="card-title">{{ active_mailings }}</h5>
+                                <p class="card-text">Активных рассылок</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card text-white bg-info mb-3">
+                            <div class="card-body">
+                                <h5 class="card-title">{{ total_users }}</h5>
+                                <p class="card-text">Пользователей</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card text-white bg-warning mb-3">
+                            <div class="card-body">
+                                <h5 class="card-title">{{ total_recipients }}</h5>
+                                <p class="card-text">Получателей</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="card text-white bg-primary mb-3">
+                            <div class="card-body">
+                                <h5 class="card-title">{{ total_mailings }}</h5>
+                                <p class="card-text">Мои рассылки</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card text-white bg-success mb-3">
+                            <div class="card-body">
+                                <h5 class="card-title">{{ active_mailings }}</h5>
+                                <p class="card-text">Активные рассылки</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card text-white bg-info mb-3">
+                            <div class="card-body">
+                                <h5 class="card-title">{{ total_recipients }}</h5>
+                                <p class="card-text">Мои получатели</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+<!--                {% endcache %}-->
+
+                {% cache 600 home_actions user.id user.groups.all.0.name %}
+                <div class="mt-4">
+                    <a href="{% url 'mailing:mailing_create' %}" class="btn btn-primary btn-lg me-2">
+                        Создать рассылку
+                    </a>
+                    <a href="{% url 'users:recipient_create' %}" class="btn btn-outline-primary btn-lg me-2">
+                        Добавить получателя
+                    </a>
+                </div>
+                {% endcache %}
+
+            {% else %}
+                <hr class="my-4">
+                {% cache 1800 home_anonymous %}
+                <p>Для доступа к системе необходимо войти или зарегистрироваться.</p>
+                <a class="btn btn-primary btn-lg me-2" href="{% url 'users:login' %}" role="button">Войти</a>
+                <a class="btn btn-outline-primary btn-lg" href="{% url 'users:register' %}" role="button">Зарегистрироваться</a>
+                {% endcache %}
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

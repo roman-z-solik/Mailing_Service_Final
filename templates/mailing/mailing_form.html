@@ -1,0 +1,280 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+    {% if object %}Редактирование рассылки #{{ object.id }}{% else %}Создание новой рассылки{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'mailing:home' %}">Главная</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'mailing:mailing_list' %}">Рассылки</a></li>
+                    <li class="breadcrumb-item active">
+                        {% if object %}Редактирование рассылки{% else %}Создание рассылки{% endif %}
+                    </li>
+                </ol>
+            </nav>
+            <h1>
+                {% if object %}
+                    Редактирование рассылки #{{ object.id }}
+                {% else %}
+                    Создание новой рассылки
+                {% endif %}
+            </h1>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="{% url 'mailing:mailing_list' %}" class="btn btn-secondary">
+                ← Назад к списку
+            </a>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h5 class="card-title mb-0">
+                {% if object %}Редактирование рассылки{% else %}Новая рассылка{% endif %}
+            </h5>
+        </div>
+        <div class="card-body">
+            <form method="post" id="mailingForm">
+                {% csrf_token %}
+
+                {% if form.non_field_errors %}
+                    <div class="alert alert-danger">
+                        {% for error in form.non_field_errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5>Основная информация</h5>
+
+                        <div class="mb-3">
+                            <label for="{{ form.title.id_for_label }}" class="form-label">
+                                <strong>Название рассылки</strong>
+                            </label>
+                            <input type="text"
+                                   name="{{ form.title.name }}"
+                                   id="{{ form.title.id_for_label }}"
+                                   class="form-control {% if form.title.errors %}is-invalid{% endif %}"
+                                   value="{{ form.title.value|default:'' }}"
+                                   required>
+                            {% if form.title.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.title.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.start_time.id_for_label }}" class="form-label">
+                                        <strong>Начало рассылки</strong>
+                                    </label>
+                                    <input type="datetime-local"
+                                           name="{{ form.start_time.name }}"
+                                           id="{{ form.start_time.id_for_label }}"
+                                           class="form-control {% if form.start_time.errors %}is-invalid{% endif %}"
+                                           value="{{ form.start_time.value|date:'Y-m-d\TH:i'|default:'' }}"
+                                           required>
+                                    {% if form.start_time.errors %}
+                                        <div class="invalid-feedback">
+                                            {% for error in form.start_time.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.end_time.id_for_label }}" class="form-label">
+                                        <strong>Окончание рассылки</strong>
+                                    </label>
+                                    <input type="datetime-local"
+                                           name="{{ form.end_time.name }}"
+                                           id="{{ form.end_time.id_for_label }}"
+                                           class="form-control {% if form.end_time.errors %}is-invalid{% endif %}"
+                                           value="{{ form.end_time.value|date:'Y-m-d\TH:i'|default:'' }}"
+                                           required>
+                                    {% if form.end_time.errors %}
+                                        <div class="invalid-feedback">
+                                            {% for error in form.end_time.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.recipients.id_for_label }}" class="form-label">
+                                <strong>Получатели</strong>
+                            </label>
+                            <select name="{{ form.recipients.name }}"
+                                    id="{{ form.recipients.id_for_label }}"
+                                    class="form-select {% if form.recipients.errors %}is-invalid{% endif %}"
+                                    multiple
+                                    size="5"
+                                    required>
+                                {% for recipient in form.recipients.field.queryset %}
+                                    <option value="{{ recipient.id }}"
+                                            {% if recipient.id in form.recipients.value or recipient in object.recipients.all %}selected{% endif %}>
+                                        {{ recipient.email }}{% if recipient.full_name %} - {{ recipient.full_name }}{% endif %}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                            {% if form.recipients.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.recipients.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">Удерживайте Ctrl для выбора нескольких получателей</div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <h5>Сообщение</h5>
+
+                        <!-- Выбор существующего шаблона -->
+                        <div class="mb-3">
+                            <label for="{{ form.existing_message.id_for_label }}" class="form-label">
+                                <strong>Выбрать шаблон сообщения</strong>
+                            </label>
+                            <select name="{{ form.existing_message.name }}"
+                                    id="{{ form.existing_message.id_for_label }}"
+                                    class="form-select">
+                                {% for message in form.existing_message.field.queryset %}
+                                    <option value="{{ message.id }}"
+                                            {% if form.existing_message.value == message.id %}selected{% endif %}>
+                                        {{ message.title }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Кнопка создания нового шаблона -->
+                        <div class="mb-3">
+                            <a href="{% url 'mailing:message_create' %}"
+                               class="btn btn-outline-success btn-sm"
+                               target="_blank">
+                                + Создать новый шаблон
+                            </a>
+                            <small class="form-text text-muted d-block">
+                                Откроется в новом окне. После создания обновите страницу.
+                            </small>
+                        </div>
+
+                        <!-- Поле текста сообщения -->
+                        <div class="mb-3">
+                            <label for="{{ form.message_text.id_for_label }}" class="form-label">
+                                <strong>Текст рассылки</strong>
+                            </label>
+                            <textarea name="{{ form.message_text.name }}"
+                                      id="{{ form.message_text.id_for_label }}"
+                                      class="form-control {% if form.message_text.errors %}is-invalid{% endif %}"
+                                      rows="8"
+                                      placeholder="Введите текст сообщения или выберите шаблон выше"
+                                      required>{{ form.message_text.value|default:'' }}</textarea>
+                            {% if form.message_text.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.message_text.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex gap-2 mt-4">
+                    <button type="submit" class="btn btn-success">
+                        {% if object %}Обновить рассылку{% else %}Создать рассылку{% endif %}
+                    </button>
+                    <a href="{% url 'mailing:mailing_list' %}" class="btn btn-secondary">Отмена</a>
+
+                    {% if object %}
+                        <a href="{% url 'mailing:mailing_detail' object.id %}" class="btn btn-outline-primary">
+                            Просмотр
+                        </a>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const existingMessageSelect = document.getElementById('{{ form.existing_message.id_for_label }}');
+    const messageTextArea = document.getElementById('{{ form.message_text.id_for_label }}');
+
+    // Данные шаблонов
+    const templateData = {
+        {% for message in form.existing_message.field.queryset %}
+            '{{ message.id }}': `{{ message.body|escapejs }}`,
+        {% endfor %}
+    };
+
+    if (existingMessageSelect) {
+        existingMessageSelect.addEventListener('change', function() {
+            const messageId = this.value;
+
+            if (messageId && templateData[messageId]) {
+                messageTextArea.value = templateData[messageId];
+            }
+        });
+
+        if (existingMessageSelect.value && templateData[existingMessageSelect.value]) {
+            messageTextArea.value = templateData[existingMessageSelect.value];
+        }
+    }
+
+    const savedFormData = localStorage.getItem('mailingFormData');
+    if (savedFormData && !{% if object %}true{% else %}false{% endif %}) {
+        const formData = JSON.parse(savedFormData);
+        document.getElementById('{{ form.title.id_for_label }}').value = formData.title || '';
+        document.getElementById('{{ form.start_time.id_for_label }}').value = formData.start_time || '';
+        document.getElementById('{{ form.end_time.id_for_label }}').value = formData.end_time || '';
+        messageTextArea.value = formData.message_text || '';
+
+        localStorage.removeItem('mailingFormData');
+    }
+
+    const createTemplateBtn = document.querySelector('a[href*="message_create"]');
+    if (createTemplateBtn) {
+        createTemplateBtn.addEventListener('click', function(e) {
+            const formData = {
+                title: document.getElementById('{{ form.title.id_for_label }}').value,
+                start_time: document.getElementById('{{ form.start_time.id_for_label }}').value,
+                end_time: document.getElementById('{{ form.end_time.id_for_label }}').value,
+                message_text: messageTextArea.value
+            };
+            localStorage.setItem('mailingFormData', JSON.stringify(formData));
+        });
+    }
+});
+</script>
+
+<style>
+.form-label {
+    font-weight: 500;
+}
+.card {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+</style>
+{% endblock %}

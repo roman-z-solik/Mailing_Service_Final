@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+
+{% block title %}Удаление рассылки #{{ object.id }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'mailing:home' %}">Главная</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'mailing:mailing_list' %}">Рассылки</a></li>
+            <li class="breadcrumb-item active">Удаление #{{ object.id }}</li>
+        </ol>
+    </nav>
+
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="card-title mb-0">
+                        <i class="bi bi-exclamation-triangle"></i> Подтверждение удаления
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <h5>Вы уверены, что хотите удалить рассылку?</h5>
+                    
+                    <div class="alert alert-warning">
+                        <strong>Внимание!</strong> Это действие нельзя отменить.
+                    </div>
+
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <h6>Информация о рассылке:</h6>
+                            <p><strong>ID:</strong> #{{ object.id }}</p>
+                            <p><strong>Тема:</strong> {{ object.message.message_topic }}</p>
+                            <p><strong>Статус:</strong> 
+                                <span class="badge 
+                                    {% if object.status == 'created' %}bg-secondary
+                                    {% elif object.status == 'started' %}bg-success
+                                    {% elif object.status == 'completed' %}bg-info
+                                    {% else %}bg-warning{% endif %}">
+                                    {{ object.get_status_display }}
+                                </span>
+                            </p>
+                            <p><strong>Получателей:</strong> {{ object.recipients.count }}</p>
+                        </div>
+                    </div>
+
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-danger">
+                                <i class="bi bi-trash"></i> Да, удалить рассылку
+                            </button>
+                            <a href="{% url 'mailing:mailing_detail' object.pk %}" class="btn btn-secondary">
+                                <i class="bi bi-x-circle"></i> Отмена
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

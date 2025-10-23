@@ -1,0 +1,270 @@
+{% extends 'base.html' %}
+{% load cache %}
+
+{% block title %}Статистика рассылок - Система рассылок{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1>Статистика рассылок</h1>
+                <div>
+                    <a href="{% url 'mailing:mailing_list' %}" class="btn btn-outline-secondary me-2">
+                        ← Назад к рассылкам
+                    </a>
+                    <a href="{% url 'mailing:mailing_logs' %}" class="btn btn-outline-primary">
+                        📊 Логи рассылок
+                    </a>
+                </div>
+            </div>
+
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="card text-white bg-primary">
+                        <div class="card-body text-center">
+                            <h2>{{ stats_data|length }}</h2>
+                            <p class="mb-0">Всего рассылок</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-white bg-success">
+                        <div class="card-body text-center">
+                            <h2>{{ total_messages }}</h2>
+                            <p class="mb-0">Всего отправок</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-white bg-info">
+                        <div class="card-body text-center">
+                            <h2>{{ successful_messages }}</h2>
+                            <p class="mb-0">Успешных</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-white bg-warning">
+                        <div class="card-body text-center">
+                            <h2>{{ overall_success_rate }}%</h2>
+                            <p class="mb-0">Общий успех</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Детальная статистика по рассылкам</h5>
+                </div>
+                <div class="card-body">
+                    {% if stats_data %}
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Рассылка</th>
+                                    <th>Владелец</th>
+                                    <th>Статус</th>
+                                    <th>Всего сообщений</th>
+                                    <th>Успешных</th>
+                                    <th>Ошибок</th>
+                                    <th>Успешность</th>
+                                    <th>Действия</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for stat in stats_data %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ stat.mailing.title }}</strong>
+                                        {% if not stat.mailing.is_active %}
+                                        <br><small class="text-danger">(отключена)</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">{{ stat.mailing.owner.email }}</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge
+                                            {% if stat.mailing.status == 'active' %}bg-success
+                                            {% elif stat.mailing.status == 'scheduled' %}bg-warning
+                                            {% elif stat.mailing.status == 'completed' %}bg-info
+                                            {% elif stat.mailing.status == 'disabled' %}bg-danger
+                                            {% else %}bg-secondary{% endif %}">
+                                            {% if stat.mailing.status == 'active' %}Активна
+                                            {% elif stat.mailing.status == 'scheduled' %}Запланирована
+                                            {% elif stat.mailing.status == 'completed' %}Завершена
+                                            {% elif stat.mailing.status == 'disabled' %}Отключена
+                                            {% else %}Неизвестно{% endif %}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-primary">{{ stat.total_messages }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-success">{{ stat.sent_messages }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-danger">{{ stat.failed_messages }}</span>
+                                    </td>
+                                    <td>
+                                        <div class="progress" style="height: 20px;">
+                                            <div class="progress-bar
+                                                {% if stat.success_rate >= 80 %}bg-success
+                                                {% elif stat.success_rate >= 50 %}bg-warning
+                                                {% else %}bg-danger{% endif %}"
+                                                role="progressbar"
+                                                style="width: {{ stat.success_rate }}%"
+                                                aria-valuenow="{{ stat.success_rate }}"
+                                                aria-valuemin="0"
+                                                aria-valuemax="100">
+                                                {{ stat.success_rate }}%
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{% url 'mailing:mailing_detail' stat.mailing.id %}"
+                                               class="btn btn-outline-primary" title="Просмотр">
+                                                👁️
+                                            </a>
+                                            <a href="{% url 'mailing:mailing_logs' %}?mailing_id={{ stat.mailing.id }}"
+                                               class="btn btn-outline-info" title="Логи">
+                                                📋
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <div class="text-muted">
+                            <i class="fas fa-chart-bar fa-3x mb-3"></i>
+                            <h4>Статистика недоступна</h4>
+                            <p>Нет данных для отображения статистики.</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if stats_data %}
+            <div class="row mt-4">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">Распределение по статусам</h5>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="statusChart" width="400" height="200"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">Успешность рассылок</h5>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="successChart" width="400" height="200"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% if stats_data %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Данные для графиков
+    const statusData = {
+        active: {{ stats_data|length }},
+        successful: {{ successful_messages }},
+        failed: {{ failed_messages }}
+    };
+
+    const mailingNames = [
+        {% for stat in stats_data %}
+        "{{ stat.mailing.title|truncatechars:20 }}",
+        {% endfor %}
+    ];
+
+    const successRates = [
+        {% for stat in stats_data %}
+        {{ stat.success_rate }},
+        {% endfor %}
+    ];
+
+    // График статусов
+    const statusCtx = document.getElementById('statusChart').getContext('2d');
+    new Chart(statusCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Активные рассылки', 'Успешные отправки', 'Ошибки отправки'],
+            datasets: [{
+                data: [statusData.active, statusData.successful, statusData.failed],
+                backgroundColor: ['#28a745', '#17a2b8', '#dc3545'],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+
+    // График успешности
+    const successCtx = document.getElementById('successChart').getContext('2d');
+    new Chart(successCtx, {
+        type: 'bar',
+        data: {
+            labels: mailingNames,
+            datasets: [{
+                label: 'Успешность (%)',
+                data: successRates,
+                backgroundColor: successRates.map(rate =>
+                    rate >= 80 ? '#28a745' :
+                    rate >= 50 ? '#ffc107' : '#dc3545'
+                ),
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100,
+                    title: {
+                        display: true,
+                        text: 'Процент успеха'
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Рассылки'
+                    }
+                }
+            }
+        }
+    });
+});
+</script>
+{% endif %}
+{% endblock %}

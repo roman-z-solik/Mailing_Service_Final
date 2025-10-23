@@ -1,0 +1,199 @@
+{% extends 'base.html' %}
+
+{% block title %}Список рассылок{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'mailing:home' %}">Главная</a></li>
+                    <li class="breadcrumb-item active">Рассылки</li>
+                </ol>
+            </nav>
+            <h1>
+                {% if is_manager %}Все рассылки{% else %}Мои рассылки{% endif %}
+                <span class="badge bg-primary">{{ total_mailings }}</span>
+            </h1>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="{% url 'mailing:mailing_create' %}" class="btn btn-success">
+                Создать рассылку
+            </a>
+        </div>
+    </div>
+
+    {% if mailings %}
+    <div class="card">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover table-striped mb-0">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>ID</th>
+                            <th>Название</th>
+                            {% if is_manager %}
+                            <th>Владелец</th>
+                            {% endif %}
+                            <th>Статус</th>
+                            <th>Начало</th>
+                            <th>Окончание</th>
+                            <th>Получателей</th>
+                            {% if is_manager %}
+                            <th>Действия менеджера</th>
+                            {% endif %}
+                            <th>Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for mailing in mailings %}
+                        <tr>
+                            <td>
+                                <a href="{% url 'mailing:mailing_detail' mailing.id %}" class="text-decoration-none text-dark fw-bold">
+                                    {{ mailing.id }}
+                                </a>
+                            </td>
+                            <td>
+                                <a href="{% url 'mailing:mailing_detail' mailing.id %}" class="text-decoration-none text-dark">
+                                    <strong>{{ mailing.title }}</strong>
+                                </a>
+                            </td>
+                            {% if is_manager %}
+                            <td>
+                                <small class="text-muted">{{ mailing.owner.email }}</small>
+                            </td>
+                            {% endif %}
+                            <td>
+                                <span class="badge
+                                    {% if mailing.status == 'Запущена' %}bg-success
+                                    {% elif mailing.status == 'Создана' %}bg-secondary
+                                    {% elif mailing.status == 'Завершена' %}bg-info
+                                    {% else %}bg-danger{% endif %}">
+                                    {{ mailing.status }}
+                                </span>
+                            </td>
+                            <td>
+                                {{ mailing.start_time|date:"d.m.Y H:i" }}
+                            </td>
+                            <td>
+                                {{ mailing.end_time|date:"d.m.Y H:i" }}
+                            </td>
+                            <td>
+                                <span class="badge bg-primary">{{ mailing.recipients.count }}</span>
+                            </td>
+                            {% if is_manager %}
+                            <td>
+                                <form method="post" action="{% url 'mailing:mailing_toggle_active' mailing.pk %}" class="d-inline">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm {% if mailing.is_active %}btn-warning{% else %}btn-success{% endif %}">
+                                        {% if mailing.is_active %}Остановить{% else %}Активировать{% endif %}
+                                    </button>
+                                </form>
+                            </td>
+                            {% endif %}
+                            <td>
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <a href="{% url 'mailing:mailing_detail' mailing.id %}"
+                                       class="btn btn-outline-primary"
+                                       title="Просмотр">
+                                        👁️
+                                    </a>
+
+                                    {% if mailing.owner == user or is_manager %}
+                                    <a href="{% url 'mailing:mailing_update' mailing.id %}"
+                                       class="btn btn-outline-warning"
+                                       title="Редактировать">
+                                        ✏️
+                                    </a>
+                                    {% endif %}
+
+                                    {% if mailing.owner == user %}
+                                    <a href="{% url 'mailing:mailing_delete' mailing.id %}"
+                                       class="btn btn-outline-danger"
+                                       title="Удалить"
+                                       onclick="return confirm('Вы уверены, что хотите удалить эту рассылку?')">
+                                        🗑️
+                                    </a>
+                                    {% endif %}
+
+                                    <form method="post" action="{% url 'mailing:mailing_send' mailing.id %}" class="d-inline">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-outline-success"
+                                                {% if mailing.recipients.count == 0 or not mailing.is_active %}disabled{% endif %}
+                                                title="Отправить рассылку">
+                                            📤
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    {% if is_paginated %}
+    <nav aria-label="Page navigation" class="mt-4">
+        <ul class="pagination justify-content-center">
+            {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page=1">Первая</a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.previous_page_number }}">← Назад</a>
+            </li>
+            {% endif %}
+
+            {% for num in page_obj.paginator.page_range %}
+                {% if page_obj.number == num %}
+                <li class="page-item active">
+                    <span class="page-link">{{ num }}</span>
+                </li>
+                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                </li>
+                {% endif %}
+            {% endfor %}
+
+            {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.next_page_number }}">Вперед →</a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Последняя</a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+
+    {% else %}
+    <div class="card">
+        <div class="card-body text-center py-5">
+            <h5 class="text-muted">Рассылок пока нет</h5>
+            <p class="text-muted">Создайте первую рассылку для отправки сообщений</p>
+            <a href="{% url 'mailing:mailing_create' %}" class="btn btn-success">
+                Создать рассылку
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+.table th {
+    border-top: none;
+}
+.btn-group-sm > .btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+}
+.table tbody tr:hover {
+    background-color: rgba(0, 123, 255, 0.05);
+}
+</style>
+{% endblock %}

@@ -1,0 +1,229 @@
+{% extends 'base.html' %}
+{% load cache %}
+
+{% block title %}Список сообщений{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'mailing:home' %}">Главная</a></li>
+                    <li class="breadcrumb-item active">Сообщения</li>
+                </ol>
+            </nav>
+            <h1>Список сообщений</h1>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="{% url 'mailing:message_create' %}" class="btn btn-success">
+                + Создать сообщение
+            </a>
+        </div>
+    </div>
+
+    {% cache 300 message_stats user.id %}
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-white bg-primary">
+                <div class="card-body text-center">
+                    <h4>{{ messages|length }}</h4>
+                    <p class="mb-0">Всего сообщений</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-success">
+                <div class="card-body text-center">
+                    <h4>{{ templates_count }}</h4>
+                    <p class="mb-0">Шаблонов</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-info">
+                <div class="card-body text-center">
+                    <h4>{{ active_in_mailings }}</h4>
+                    <p class="mb-0">В рассылках</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-warning">
+                <div class="card-body text-center">
+                    <h4>{% if is_manager %}Все{% else %}Мои{% endif %}</h4>
+                    <p class="mb-0">Сообщения</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endcache %}
+
+    {% if messages %}
+    <div class="card">
+        <div class="card-header bg-light">
+            <h5 class="card-title mb-0">
+                {% if is_manager %}Все сообщения{% else %}Мои сообщения{% endif %}
+                ({{ messages|length }})
+            </h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover table-striped mb-0">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>ID</th>
+                            <th>Название</th>
+                            <th>Тема</th>
+                            <th>Тип</th>
+                            <th>Владелец</th>
+                            <th>Дата создания</th>
+                            <th>Используется в рассылках</th>
+                            <th>Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for message in messages %}
+                        <tr>
+                            <td>
+                                <a href="{% url 'mailing:message_detail' message.id %}" class="text-decoration-none text-dark fw-bold">
+                                    {{ message.id }}
+                                </a>
+                            </td>
+                            <td>
+                                <a href="{% url 'mailing:message_detail' message.id %}" class="text-decoration-none text-dark">
+                                    <strong>{{ message.title }}</strong>
+                                </a>
+                            </td>
+                            <td>
+                                <small class="text-muted">{{ message.subject|truncatewords:5 }}</small>
+                            </td>
+                            <td>
+                                {% if message.is_template %}
+                                <span class="badge bg-info">Шаблон</span>
+                                {% else %}
+                                <span class="badge bg-secondary">Сообщение</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <small class="text-muted">{{ message.owner.email }}</small>
+                            </td>
+                            <td>
+                                {{ message.created_at|date:"d.m.Y H:i" }}
+                            </td>
+                            <td>
+                                {% with mailing_count=message.mailings.count %}
+                                    {% if mailing_count > 0 %}
+                                        <span class="badge bg-success">{{ mailing_count }}</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">0</span>
+                                    {% endif %}
+                                {% endwith %}
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <a href="{% url 'mailing:message_detail' message.id %}"
+                                       class="btn btn-outline-primary"
+                                       title="Просмотр">
+                                        👁️
+                                    </a>
+
+                                    {% if message.owner == user or is_manager %}
+                                    <a href="{% url 'mailing:message_update' message.id %}"
+                                       class="btn btn-outline-warning"
+                                       title="Редактировать">
+                                        ✏️
+                                    </a>
+                                    {% endif %}
+
+                                    {% if message.owner == user %}
+                                    <a href="{% url 'mailing:message_delete' message.id %}"
+                                       class="btn btn-outline-danger"
+                                       title="Удалить"
+                                       onclick="return confirm('Вы уверены, что хотите удалить это сообщение?')">
+                                        🗑️
+                                    </a>
+                                    {% endif %}
+
+                                    <a href="{% url 'mailing:mailing_create' %}?message_id={{ message.id }}"
+                                       class="btn btn-outline-success"
+                                       title="Использовать в рассылке">
+                                        📧
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    {% if is_paginated %}
+    <nav aria-label="Page navigation" class="mt-4">
+        <ul class="pagination justify-content-center">
+            {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page=1">Первая</a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.previous_page_number }}">← Назад</a>
+            </li>
+            {% endif %}
+
+            {% for num in page_obj.paginator.page_range %}
+                {% if page_obj.number == num %}
+                <li class="page-item active">
+                    <span class="page-link">{{ num }}</span>
+                </li>
+                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                </li>
+                {% endif %}
+            {% endfor %}
+
+            {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.next_page_number }}">Вперед →</a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Последняя</a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+
+    {% else %}
+    <div class="card">
+        <div class="card-body text-center py-5">
+            <h5 class="text-muted">Сообщений пока нет</h5>
+            <p class="text-muted">Создайте первое сообщение для использования в рассылках</p>
+            <a href="{% url 'mailing:message_create' %}" class="btn btn-success">
+                + Создать сообщение
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+.table th {
+    border-top: none;
+}
+.btn-group-sm > .btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+}
+.table tbody tr:hover {
+    background-color: rgba(0, 123, 255, 0.05);
+}
+.card .card-body.text-center h4 {
+    font-size: 1.8rem;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+}
+</style>
+{% endblock %}

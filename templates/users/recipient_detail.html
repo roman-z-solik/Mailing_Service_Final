@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+
+{% block title %}Получатель - {{ recipient.email }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'mailing:home' %}">Главная</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'users:recipient_list' %}">Получатели</a></li>
+                    <li class="breadcrumb-item active">Детали получателя</li>
+                </ol>
+            </nav>
+            <h1>Получатель {{ recipient.email }}</h1>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="{% url 'users:recipient_list' %}" class="btn btn-secondary">
+                ← Назад к списку
+            </a>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="card-title mb-0">Основная информация</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>ID:</strong> {{ recipient.id }}</p>
+                    <p><strong>Email:</strong> {{ recipient.email }}</p>
+                </div>
+                <div class="col-md-6">
+                    <p><strong>ФИО:</strong>
+                        {% if recipient.fullname %}
+                            {{ recipient.fullname }}
+                        {% else %}
+                            <span class="text-muted">Не указано</span>
+                        {% endif %}
+                    </p>
+                    <p><strong>Комментарий:</strong>
+                        {% if recipient.comment %}
+                            {{ recipient.comment }}
+                        {% else %}
+                            <span class="text-muted">Не указан</span>
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h5 class="card-title mb-0">Действия</h5>
+        </div>
+        <div class="card-body">
+            <div class="d-flex flex-wrap gap-2">
+                <a href="{% url 'users:recipient_update' recipient.id %}" class="btn btn-warning">
+                    <i class="bi bi-pencil"></i> Редактировать
+                </a>
+                <a href="{% url 'users:recipient_delete' recipient.id %}" class="btn btn-danger">
+                    <i class="bi bi-trash"></i> Удалить
+                </a>
+                <a href="{% url 'users:recipient_list' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> К списку получателей
+                </a>
+                <a href="{% url 'mailing:mailing_create' %}" class="btn btn-success">
+                    <i class="bi bi-send"></i> Добавить в рассылку
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.bi::before {
+    display: inline-block;
+    margin-right: 0.25rem;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+
+{% block title %}Удаление получателя{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-exclamation-triangle"></i> Удаление получателя
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="alert alert-warning">
+                        <strong>Внимание!</strong> Вы собираетесь удалить получателя. Это действие нельзя отменить.
+                    </p>
+
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <h6>Информация о получателе:</h6>
+                            <p><strong>ID:</strong> {{ object.id }}</p>
+                            <p><strong>Email:</strong> {{ object.email }}</p>
+                            <p><strong>ФИО:</strong> {{ object.fullname|default:"Не указано" }}</p>
+                            <p><strong>Комментарий:</strong> {{ object.comment|default:"Не указан" }}</p>
+                        </div>
+                    </div>
+
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-danger flex-fill">
+                                <i class="bi bi-trash"></i> Да, удалить получателя
+                            </button>
+                            <a href="{% url 'users:recipient_list' %}" class="btn btn-secondary">
+                                <i class="bi bi-x-circle"></i> Отмена
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.bi::before {
+    display: inline-block;
+    margin-right: 0.25rem;
+}
+</style>
+{% endblock %}

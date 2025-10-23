@@ -1,0 +1,163 @@
+{% extends 'base.html' %}
+
+{% block title %}
+    {% if object %}Редактирование сообщения #{{ object.id }}{% else %}Создание сообщения{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'mailing:home' %}">Главная</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'mailing:message_list' %}">Сообщения</a></li>
+            <li class="breadcrumb-item active">
+                {% if object %}Редактирование #{{ object.id }}{% else %}Создание сообщения{% endif %}
+            </li>
+        </ol>
+    </nav>
+
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="card-title mb-0">
+                        {% if object %}Редактирование сообщения #{{ object.id }}{% else %}Создание нового сообщения{% endif %}
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+
+                        {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {% for error in form.non_field_errors %}
+                                {{ error }}
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+
+                        <div class="mb-3">
+                            <label for="{{ form.title.id_for_label }}" class="form-label fw-bold">
+                                Название сообщения
+                            </label>
+                            <input type="text"
+                                   name="{{ form.title.name }}"
+                                   id="{{ form.title.id_for_label }}"
+                                   class="form-control {% if form.title.errors %}is-invalid{% endif %}"
+                                   value="{{ form.title.value|default:'' }}"
+                                   placeholder="Введите название сообщения"
+                                   required>
+                            {% if form.title.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.title.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                            <div class="form-text">Это название будет использоваться для выбора в рассылках</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.subject.id_for_label }}" class="form-label fw-bold">
+                                Тема письма
+                            </label>
+                            <input type="text"
+                                   name="{{ form.subject.name }}"
+                                   id="{{ form.subject.id_for_label }}"
+                                   class="form-control {% if form.subject.errors %}is-invalid{% endif %}"
+                                   value="{{ form.subject.value|default:'' }}"
+                                   placeholder="Введите тему письма"
+                                   required>
+                            {% if form.subject.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.subject.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                            <div class="form-text">Эта тема будет отображаться в поле "Тема" email</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.body.id_for_label }}" class="form-label fw-bold">
+                                Текст сообщения
+                            </label>
+                            <textarea name="{{ form.body.name }}"
+                                      id="{{ form.body.id_for_label }}"
+                                      class="form-control {% if form.body.errors %}is-invalid{% endif %}"
+                                      rows="8"
+                                      placeholder="Введите текст сообщения"
+                                      required>{{ form.body.value|default:'' }}</textarea>
+                            {% if form.body.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.body.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                            <div class="form-text">Поддерживается HTML разметка. Этот текст будет использоваться в рассылках.</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="form-check form-switch">
+                                <input type="checkbox"
+                                       name="{{ form.is_template.name }}"
+                                       id="{{ form.is_template.id_for_label }}"
+                                       class="form-check-input"
+                                       {% if form.is_template.value %}checked{% endif %}>
+                                <label class="form-check-label fw-bold" for="{{ form.is_template.id_for_label }}">
+                                    Использовать как шаблон
+                                </label>
+                            </div>
+                            <div class="form-text">Если отмечено, это сообщение будет доступно как шаблон для повторного использования в других рассылках</div>
+                        </div>
+
+                        <div class="mt-4">
+                            <button type="submit" class="btn btn-success">
+                                {% if object %}Обновить сообщение{% else %}Создать сообщение{% endif %}
+                            </button>
+                            <a href="{% if object %}{% url 'mailing:message_detail' object.pk %}{% else %}{% url 'mailing:message_list' %}{% endif %}"
+                               class="btn btn-secondary">
+                                Отмена
+                            </a>
+
+                            {% if object %}
+                            <a href="{% url 'mailing:message_detail' object.pk %}" class="btn btn-outline-primary">
+                                Просмотр
+                            </a>
+                            {% endif %}
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">Справка</h6>
+                </div>
+                <div class="card-body">
+                    <ul class="mb-0">
+                        <li><strong>Название сообщения</strong> - используется для идентификации в списке сообщений</li>
+                        <li><strong>Тема письма</strong> - отображается получателю в поле "Тема" email</li>
+                        <li><strong>Текст сообщения</strong> - основное содержимое рассылки</li>
+                        <li><strong>Шаблон</strong> - позволяет использовать это сообщение многократно в разных рассылках</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.form-control {
+    max-width: 100%;
+}
+.form-check-input:checked {
+    background-color: #198754;
+    border-color: #198754;
+}
+.card {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+</style>
+{% endblock %}

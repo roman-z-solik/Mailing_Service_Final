@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+
+{% block title %}Удаление сообщения #{{ object.id }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'mailing:home' %}">Главная</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'mailing:message_list' %}">Сообщения</a></li>
+            <li class="breadcrumb-item active">Удаление #{{ object.id }}</li>
+        </ol>
+    </nav>
+
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="card-title mb-0">
+                        <i class="bi bi-exclamation-triangle"></i> Подтверждение удаления
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <h5>Вы уверены, что хотите удалить сообщение?</h5>
+
+                    <div class="alert alert-warning">
+                        <strong>Внимание!</strong> Это действие нельзя отменить.
+                        {% if object.mailing_set.exists %}
+                        <br><strong>Это сообщение используется в {{ object.mailing_set.count }} рассылках!</strong>
+                        {% endif %}
+                    </div>
+
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h6 class="card-title mb-0">Информация о сообщении:</h6>
+                        </div>
+                        <div class="card-body">
+                            <p><strong>ID:</strong> #{{ object.id }}</p>
+                            <p><strong>Тема:</strong> {{ object.message_topic }}</p>
+                            <p><strong>Текст:</strong>
+                                <span class="text-muted">{{ object.message_body|truncatewords:30 }}</span>
+                            </p>
+                            <p><strong>Используется в рассылках:</strong>
+                                {% if object.mailing_set.exists %}
+                                    <span class="badge bg-warning">{{ object.mailing_set.count }}</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">0</span>
+                                {% endif %}
+                            </p>
+                            <p><strong>Дата создания:</strong>
+                                {% if object.created_at %}
+                                    {{ object.created_at|date:"d.m.Y H:i" }}
+                                {% else %}
+                                    <span class="text-muted">Не указана</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-danger">
+                                <i class="bi bi-trash"></i> Да, удалить сообщение
+                            </button>
+                            <a href="{% url 'mailing:message_detail' object.pk %}" class="btn btn-secondary">
+                                <i class="bi bi-x-circle"></i> Отмена
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
