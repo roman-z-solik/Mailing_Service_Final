@@ -1,11 +1,9 @@
-
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.messages.views import SuccessMessageMixin
 from django.core.cache import cache
 from django.core.mail import send_mail
-from django.db import models
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
 from django.utils import timezone
@@ -84,36 +82,19 @@ class MailingListView(LoginRequiredMixin, UserAccessMixin, ListView):
             self.request.user.groups.filter(name="Managers").exists()
             or self.request.user.is_superuser
         ):
-            queryset = (
-                Mailing.objects.all()
-                .select_related("owner")
-                .prefetch_related("recipients")
-                .annotate(
-                    total_logs_count=models.Count("logs"),
-                    sent_logs_count=models.Count(
-                        "logs", filter=models.Q(logs__status="sent")
-                    ),
-                )
-            )
+            queryset = Mailing.objects.all().select_related("owner")
         else:
-            queryset = (
-                Mailing.objects.filter(owner=self.request.user)
-                .select_related("owner")
-                .prefetch_related("recipients")
-                .annotate(
-                    total_logs_count=models.Count("logs"),
-                    sent_logs_count=models.Count(
-                        "logs", filter=models.Q(logs__status="sent")
-                    ),
-                )
+            queryset = Mailing.objects.filter(owner=self.request.user).select_related(
+                "owner"
             )
-        return queryset
+
+        return queryset.order_by("-created_at")
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        user = self.request.user
         context["is_manager"] = (
-            user.groups.filter(name="Managers").exists() or user.is_superuser
+            self.request.user.groups.filter(name="Managers").exists()
+            or self.request.user.is_superuser
         )
         context["total_mailings"] = context["mailings"].count()
         return context
@@ -188,8 +169,19 @@ class MailingCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
         form.instance.owner = self.request.user
         form.instance.is_active = True
 
-        cache.delete(f"mailings_user_{self.request.user.id}")
-        cache.delete(f"home_stats_{self.request.user.id}")
+        user_id = self.request.user.id
+        cache_keys_to_delete = [
+            f"mailings_user_{user_id}",
+            f"home_stats_{user_id}",
+            f"mailing_list_{user_id}",
+        ]
+
+        for key in cache_keys_to_delete:
+            cache.delete(key)
+
+        if self.request.user.groups.filter(name="Managers").exists():
+            cache.delete_pattern("*mailings_user_*")
+            cache.delete_pattern("*home_stats_*")
 
         return super().form_valid(form)
 
